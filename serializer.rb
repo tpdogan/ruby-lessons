@@ -11,6 +11,7 @@ module BasicSerialize
   end
 
   def unserialize(string)
+    #puts string
     ser = @@serializer.load string
     ser.keys.map do |key|
       set_attr(key, ser[key])
