@@ -1,5 +1,5 @@
 class Table
-  @table
+  attr_accessor :table
   def initialize
     @table = Array.new(9,'-')
   end
@@ -28,7 +28,7 @@ class TicTacToe < Table
     super
     puts "New board is created:"
     display
-    game
+    #game
   end
 
   def game
@@ -79,7 +79,7 @@ class TicTacToe < Table
   end
 end
 
-game = TicTacToe.new
+#game = TicTacToe.new
 =begin
 game.display
 game.play('X',2)
