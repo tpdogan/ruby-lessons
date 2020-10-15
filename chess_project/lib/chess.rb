@@ -1,5 +1,30 @@
 class Chess
-  attr_reader :table
+  attr_reader :table, :player
+  def initialize
+    createTable
+    addPieces
+    @player = 'white'
+    print `tput clear`
+    while !gameOver? do
+      display
+      entry = '1234'
+      done = true
+      while done==true do
+        print "#{@player.capitalize} plays (example -> a2d3): "
+        entry = gets.chomp
+        qq = play(entry[0..1],entry[2..3])
+        done = !qq
+      end
+      if @player == 'white'
+        @player = 'black'
+      else
+        @player = 'white'
+      end
+      print `tput clear`
+    end
+    display
+  end
+
   def createTable
     @table = Array.new(64,'')
   end
@@ -23,19 +48,22 @@ class Chess
     @table[0] = wro; @table[7] = wro
     @table[1] = wkn; @table[6] = wkn
     @table[2] = wbi; @table[5] = wbi
-    @table[3] = wqu; @table[4] = wki
+    @table[3] = wki; @table[4] = wqu
 
     # Adding black pieces
     @table[48..55] = Array.new(8,bpa)
     @table[56] = bro; @table[63] = bro
     @table[57] = bkn; @table[62] = bkn
     @table[58] = bbi; @table[61] = bbi
-    @table[59] = bqu; @table[60] = bki
+    @table[59] = bki; @table[60] = bqu
   end
 
   def display
     color = 0
+    print ' ' + ('a'..'h').to_a.join(' ')
+    puts
     (1..8).each do |row|
+      print 9-row
       (0..7).each do |col|
         print `tput setab #{color};`
         if @table[(row-1)*8 + col] == ''
@@ -47,8 +75,41 @@ class Chess
       end
       color == 0 ? color = 8 : color = 0
       print `tput sgr #{0};`
+      print 9-row
       puts
     end
+    print ' ' + ('a'..'h').to_a.join(' ')
+    puts
+  end
+
+  def notation(str)
+    return nil if str.length < 2
+    ltr = ('a'..'h').to_a.index(str[0].downcase)
+    num = (1..8).to_a.index(str[1].to_i)
+    return [ltr+1, 8-num] unless ltr == nil || num == nil
+    return nil
+  end
+
+  def play(strfrom, strto)
+    from = notation(strfrom)
+    to = notation(strto)
+    return nil if from == nil || to == nil
+
+    if @player == 'white' && getColor(from) == 'black'
+      return test = movePiece?(from, to)
+    elsif @player == 'black' && getColor(from) == 'white'
+      return movePiece?(from, to)
+    end
+    return nil
+  end
+
+  def gameOver?
+    if @table.include?("\u2654 ".encode("utf-8")) &&
+       @table.include?("\u265A ".encode("utf-8"))
+       return false
+    end
+    p !@table.include?("\u2654 ".encode("utf-8")) ? "White wins" : "Black wins"
+    return true
   end
 
   def inTable?(from, to)
@@ -114,28 +175,20 @@ class Chess
       getColor(to) == getColor(from) ? (return false) : (return true)
 
     elsif piece == "bishop"
-      (dx.abs - 1).times do
-        return false if isChessman?([from[0]+dx, from[1]+dy])
+      delta = to[0] - from[0]
+      (delta.abs - 1).times do |i|
+        return false if isChessman?([from[0]+dx*(i+1), from[1]+dy*(i+1)])
       end
       getColor(to) == getColor(from) ? (return false) : (return true)
 
     elsif piece == "rock"
       delta = to[0] + to[1] - from[0] - from[1]
-      (delta.abs - 1).times do
-        return false if isChessman?([from[0]+dx, from[1]+dy])
-      end
-      getColor(to) == getColor(from) ? (return false) : (return true)
-
-    elsif piece == "queen"
-      ((to[0] - from[0]).abs - 1).times do
-        return false if isChessman?([from[0]+dx, from[1]+dy])
+      (delta.abs - 1).times do |i|
+        return false if isChessman?([from[0]+dx*(i+1), from[1]+dy*(i+1)])
       end
       getColor(to) == getColor(from) ? (return false) : (return true)
 
     elsif piece == "king"
-      ((to[0] - from[0]).abs - 1).times do
-        return false if isChessman?([from[0]+dx, from[1]+dy])
-      end
       getColor(to) == getColor(from) ? (return false) : (return true)
     end
     return false
@@ -171,11 +224,13 @@ class Chess
         return true
       end
     elsif piece == "queen"
-      if isQueenMove?(from, to) && canMove?(piece, from, to)
+      if isBishopMove?(from, to) && canMove?("bishop", from, to) ||
+         isRockMove?(from, to) && canMove?("rock", from, to)
         @table[pos2] = @table[pos1]
         @table[pos1] = ''
         return true
       end
+      
     elsif piece == "king" && canMove?(piece, from, to)
       if isKingMove?(from, to)
         @table[pos2] = @table[pos1]
@@ -240,21 +295,12 @@ class Chess
     end
     return false
   end
-
-  def isQueenMove?(from, to)
-    return true if isRockMove?(from, to) || isBishopMove?(from, to)
-    return false
-  end
 end
 
 game = Chess.new
-game.createTable
-game.addPieces
-game.display
-game.movePiece?([1,1],[1,3])
-game.movePiece?([2,2],[2,4])
-game.movePiece?([3,1],[1,3])
-game.movePiece?([1,2],[1,4])
-game.display
-=begin
-=end
+
+# Improvements
+# 1 - Create check
+# 2 - Create check mate
+# 3 - Add rock-king exchange
+# 4 - Add AI
