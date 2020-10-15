@@ -1,9 +1,13 @@
 class Chess
+  require 'json'
   attr_reader :table, :player
   def initialize
-    createTable
-    addPieces
-    @player = 'white'
+    playSaved
+    gameOn
+  end
+
+  def gameOn
+    save = false
     print `tput clear`
     while !gameOver? do
       display
@@ -12,9 +16,15 @@ class Chess
       while done==true do
         print "#{@player.capitalize} plays (example -> a2d3): "
         entry = gets.chomp
+        if entry == 'save'
+          save = true;
+          saveGame
+          break
+        end
         qq = play(entry[0..1],entry[2..3])
         done = !qq
       end
+      break if save
       if @player == 'white'
         @player = 'black'
       else
@@ -22,7 +32,26 @@ class Chess
       end
       print `tput clear`
     end
-    display
+  end
+
+  def newGame
+    createTable
+    addPieces
+    @player = 'white'
+  end
+
+  def playSaved
+    savefile = 'chess-save.txt'
+    if File.exists?(savefile)
+      print "Would you like to continue saved game? [y/n]"
+      ans = gets.chomp
+
+      if ans.downcase.include?('y')
+        openGame
+      else
+        newGame
+      end
+    end
   end
 
   def createTable
@@ -294,6 +323,21 @@ class Chess
       return true if from_added.include?(to)
     end
     return false
+  end
+
+  def saveGame
+    ser = {}
+    ser[:table] = @table
+    ser[:player] = @player
+    open('chess-save.txt','w').puts JSON.dump ser
+    puts "The game has been successfully saved."
+  end
+
+  def openGame
+    string = open('chess-save.txt','r').read
+    ser = JSON.load string
+    puts @table = ser['table']
+    puts @player = ser['player']
   end
 end
 
